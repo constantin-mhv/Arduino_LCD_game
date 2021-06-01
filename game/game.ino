@@ -6,10 +6,11 @@
 #endif
 
 void setup(void) {
+    Serial.begin(1200);
     byte i, j;
     tft.initR(INITR_144GREENTAB); // Init ST7735R chip, green tab
     tft.fillScreen(ST77XX_BLACK);
-    tft.setRotation(90); // set display orientation
+    tft.setRotation(0); // set display orientation
 
     activate_buttons();
     tft.drawFastHLine(0, BAR_LINE_POS, 128, 0x7124);
@@ -23,11 +24,21 @@ void setup(void) {
     /* draw ball */
     tft.fillRect(ball_x * PIXEL, ball_y * PIXEL, PIXEL, PIXEL, ST77XX_WHITE);
 
+    /* copy obstalces for current level */
+    for(i = 0; i < OBSTACL_H; i++) {
+        memcpy(current_obstacles[i], obstacles[i], OBSTACL_W);
+    }
+
     /* draw obstacles */
     for(i = 0; i < OBSTACL_H; i++) {
         for(j = 0; j < OBSTACL_W; j++) {
-            if(obstacles[i][j] != 0)
-                tft.fillRect(j * 2 * PIXEL, i * PIXEL + PIXEL * 4, PIXEL * 2, PIXEL, ST77XX_RED);
+            if(current_obstacles[i][j] != NO_COLOR)
+                tft.fillRect(
+                    j * 2 * PIXEL, /* x */
+                    i * PIXEL + PIXEL * OBSTACL_START, /* y */
+                    PIXEL * 2, /* width */
+                    PIXEL, /* hight */
+                    get_uint16_color(current_obstacles[i][j]));
         }
     }
 }
