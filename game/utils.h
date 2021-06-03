@@ -10,6 +10,10 @@
 #include "LCD_utils.h"
 #endif
 
+#ifndef HEADERFILE_LEVELS
+#include "levels.h"
+#endif
+
 uint8_t first_platform = 15;
 uint8_t last_platform = 17;
 
@@ -17,40 +21,6 @@ uint8_t ball_x = first_platform + BALL_PLATFORM_INIT_POS;
 uint8_t ball_y = PIXEL_DISPLAY_LEN - 2;
 uint8_t ball_h_direct = RIGHT;
 uint8_t ball_v_direct = UP;
-
-byte obstacles[OBSTACL_H][OBSTACL_W] {
-    {BYTE_RED, BYTE_RED, BYTE_RED, BYTE_RED,
-    BYTE_RED, BYTE_RED, BYTE_RED, BYTE_GREEN,
-    BYTE_GREEN, NO_COLOR, BYTE_YELLOW, BYTE_ORANGE,
-    BYTE_ORANGE, BYTE_GREEN, BYTE_CYAN, BYTE_RED},
-
-    {BYTE_RED, BYTE_RED, BYTE_RED, BYTE_RED,
-    BYTE_RED, BYTE_RED, BYTE_RED, BYTE_GREEN,
-    BYTE_GREEN, NO_COLOR, BYTE_YELLOW, BYTE_ORANGE,
-    BYTE_ORANGE, BYTE_GREEN, BYTE_CYAN, BYTE_RED},
-
-    {BYTE_RED, BYTE_RED, BYTE_RED, BYTE_RED,
-    BYTE_RED, BYTE_RED, BYTE_RED, BYTE_GREEN,
-    BYTE_GREEN, NO_COLOR, BYTE_YELLOW, BYTE_ORANGE,
-    BYTE_ORANGE, BYTE_GREEN, BYTE_CYAN, BYTE_RED},
-
-    {BYTE_RED, BYTE_RED, BYTE_RED, BYTE_RED,
-    BYTE_RED, BYTE_RED, BYTE_RED, BYTE_GREEN,
-    BYTE_GREEN, NO_COLOR, BYTE_YELLOW, BYTE_ORANGE,
-    BYTE_ORANGE, BYTE_GREEN, BYTE_CYAN, BYTE_RED},
-
-    {BYTE_RED, BYTE_RED, BYTE_RED, BYTE_RED,
-    BYTE_RED, BYTE_RED, BYTE_RED, BYTE_GREEN,
-    BYTE_GREEN, NO_COLOR, BYTE_YELLOW, BYTE_ORANGE,
-    BYTE_ORANGE, BYTE_GREEN, BYTE_CYAN, BYTE_RED},
-
-    {BYTE_RED, BYTE_RED, BYTE_RED, BYTE_RED,
-    BYTE_RED, BYTE_RED, BYTE_RED, BYTE_GREEN,
-    BYTE_GREEN, NO_COLOR, BYTE_YELLOW, BYTE_ORANGE,
-    BYTE_ORANGE, BYTE_GREEN, BYTE_CYAN, BYTE_RED}
-};
-
-uint8_t current_obstacles[OBSTACL_H][OBSTACL_W];
 
 void move_platform(byte direction);
 void activate_buttons();
@@ -86,10 +56,10 @@ bool collide_with_obstacle(uint8_t x, uint8_t y) {
     uint8_t obstacle_x = x / 2;
     uint8_t obstacle_y = y  - OBSTACL_START;
     if(current_obstacles[obstacle_y][obstacle_x] != NO_OBSTACLE) {
-            current_obstacles[obstacle_y][obstacle_x] = NO_OBSTACLE;
-            paint_over_obstacle(obstacle_x, obstacle_y);
-            return true;
-        }
+        current_obstacles[obstacle_y][obstacle_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_x, obstacle_y);
+        return true;
+    }
     return false;
 }
 
@@ -117,11 +87,35 @@ void move_ball_up_right(void) {
         return;
     }
     
-    if(y >= OBSTACL_START && y <= OBSTACL_END) {
-        if(collide_with_obstacle(x, y)) {
-            move_ball_down_right();
-            return;
-        }
+    uint8_t obstacle_diag_x = x / 2;
+    uint8_t obstacle_diag_y = y  - OBSTACL_START;
+
+    uint8_t obstacle_v_x = ball_x / 2;
+    uint8_t obstacle_v_y = y - OBSTACL_START;
+
+    uint8_t obstacle_h_x = x / 2;
+    uint8_t obstacle_h_y = ball_y - OBSTACL_START;
+
+     if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+            (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
+        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
+        move_ball_down_right();
+        return;
+    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+            current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
+        move_ball_up_left();
+        return;
+    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+            current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
+        Serial.println("diag");
+        current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
+        move_ball_down_left();
+        return;
     }
 
     draw_ball(ball_x++, ball_y--, x, y);
@@ -141,12 +135,36 @@ void move_ball_up_left(void) {
         move_ball_down_left();
         return;
     }
-    
-    if(y >= OBSTACL_START && y <= OBSTACL_END) {
-        if(collide_with_obstacle(x, y)) {
-            move_ball_down_left();
-            return;
-        }
+
+    uint8_t obstacle_diag_x = x / 2;
+    uint8_t obstacle_diag_y = y  - OBSTACL_START;
+
+    uint8_t obstacle_v_x = ball_x / 2;
+    uint8_t obstacle_v_y = y - OBSTACL_START;
+
+    uint8_t obstacle_h_x = x / 2;
+    uint8_t obstacle_h_y = ball_y - OBSTACL_START;
+
+    if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+            (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
+        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
+        move_ball_down_left();
+        return;
+    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+            current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
+        move_ball_up_right();
+        return;
+    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+            current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
+        Serial.println("diag");
+        current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
+        move_ball_down_right();
+        return;
     }
 
     draw_ball(ball_x--, ball_y--, x, y);
@@ -166,12 +184,36 @@ void move_ball_down_left(void) {
         move_ball_up_left();
         return;
     }
+
+    uint8_t obstacle_diag_x = x / 2;
+    uint8_t obstacle_diag_y = y  - OBSTACL_START;
+
+    uint8_t obstacle_v_x = ball_x / 2;
+    uint8_t obstacle_v_y = y - OBSTACL_START;
+
+    uint8_t obstacle_h_x = x / 2;
+    uint8_t obstacle_h_y = ball_y - OBSTACL_START;
     
-    if(y >= OBSTACL_START && y <= OBSTACL_END) {
-        if(collide_with_obstacle(x, y)) {
-            move_ball_up_left();
-            return;
-        }
+    if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+            (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
+        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
+        move_ball_up_left();
+        return;
+    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+            current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
+        move_ball_down_right();
+        return;
+    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+            current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
+        Serial.println("diag");
+        current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
+        move_ball_up_right();
+        return;
     }
 
     draw_ball(ball_x--, ball_y++, x, y);
@@ -191,14 +233,38 @@ void move_ball_down_right(void) {
         move_ball_up_right();
         return;
     }
-    
-    if(y >= OBSTACL_START && y <= OBSTACL_END) {
-        if(collide_with_obstacle(x, y)) {
-            move_ball_up_right();
-            return;
-        }
-    }
 
+    uint8_t obstacle_diag_x = x / 2;
+    uint8_t obstacle_diag_y = y  - OBSTACL_START;
+
+    uint8_t obstacle_v_x = ball_x / 2;
+    uint8_t obstacle_v_y = y - OBSTACL_START;
+
+    uint8_t obstacle_h_x = x / 2;
+    uint8_t obstacle_h_y = ball_y - OBSTACL_START;
+
+    if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+            (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
+        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
+        move_ball_up_right();
+        return;
+    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+            current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
+        move_ball_down_left();
+        return;
+    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+            current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
+        Serial.println("diag");
+        current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
+        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
+        move_ball_up_left();
+        return;
+    }
+    
     draw_ball(ball_x++, ball_y++, x, y);
     ball_v_direct = DOWN;
     ball_h_direct = RIGHT;

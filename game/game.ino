@@ -5,6 +5,10 @@
 #include "constants.h"
 #endif
 
+#ifndef HEADERFILE_LEVELS
+#include "levels.h"
+#endif
+
 void setup(void) {
     Serial.begin(1200);
     byte i, j;
@@ -25,9 +29,10 @@ void setup(void) {
     tft.fillRect(ball_x * PIXEL, ball_y * PIXEL, PIXEL, PIXEL, ST77XX_WHITE);
 
     /* copy obstalces for current level */
-    for(i = 0; i < OBSTACL_H; i++) {
-        memcpy(current_obstacles[i], obstacles[i], OBSTACL_W);
-    }
+    // for(i = 0; i < OBSTACL_H; i++) {
+    //     memcpy(current_obstacles[i], obstacles[i], OBSTACL_W);
+    // }
+    prepare_current_level();
 
     /* draw obstacles */
     for(i = 0; i < OBSTACL_H; i++) {

@@ -20,7 +20,7 @@
 #define OBSTACL_H (uint8_t) 16
 #define OBSTACL_W (uint8_t) 16
 #define OBSTACL_START 4
-#define OBSTACL_END 9
+#define OBSTACL_END 19
 
 #define LEFT (uint8_t) 1
 #define RIGHT (uint8_t) 2
@@ -29,7 +29,7 @@
 
 
 /* --- 8bit colors --- */
-#define BYTE_BLACK (uint8_t) 0
+#define BYTE_BLACK (uint8_t) 9
 #define BYTE_WHITE (uint8_t) 1
 #define BYTE_RED (uint8_t) 2
 #define BYTE_GREEN (uint8_t) 3
@@ -38,7 +38,7 @@
 #define BYTE_MAGENTA (uint8_t) 6
 #define BYTE_YELLOW (uint8_t) 7
 #define BYTE_ORANGE (uint8_t) 8
-#define NO_COLOR (uint8_t) 255
+#define NO_COLOR (uint8_t) 0
 #define NO_OBSTACLE NO_COLOR
 
 /* TODO: down pixel border */
