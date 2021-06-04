@@ -1,6 +1,8 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library
+#include <string.h>
+#include <stdio.h>
 
 #define HEADERFILE_LCD_UTILS
 
@@ -18,6 +20,9 @@ void print_text(byte x_pos, byte y_pos, char *text, byte text_size, uint16_t col
 void update_platform(byte direction, byte old_platform);
 void draw_ball(byte old_x, byte old_y, byte x, byte y);
 void paint_over_obstacle(uint8_t x, uint8_t y);
+void update_lives(uint8_t num_lives);
+void reset_animation();
+void update_score(uint16_t score);
 uint16_t get_uint16_color(uint8_t color);
 
 
@@ -29,6 +34,31 @@ void print_text(byte x_pos, byte y_pos, char *text, byte text_size, uint16_t col
     tft.setTextColor(color);
     tft.setTextWrap(true);
     tft.print(text);
+}
+
+void draw_platform(uint16_t color) {
+    uint8_t i;
+
+    for (i = INIT_FIRST_PLATFORM; i <= INIT_LAST_PLATFORM; i++)
+        tft.fillRect(i * PIXEL, DISPLAY_LEN - PIXEL, PIXEL, PIXEL, color);
+}
+
+void reset_animation() {
+    tft.fillRect(0, DISPLAY_LEN - 2 * PIXEL, DISPLAY_LEN, 2 * PIXEL, ST77XX_BLACK);
+    tft.fillRect(INIT_BALL_X * PIXEL , INIT_BALL_Y * PIXEL, PIXEL, PIXEL, ST77XX_WHITE);
+    for (uint8_t i = 0; i < 4; i++) {
+        draw_platform(ST77XX_GREEN);
+        analogWrite(BUZZER_PIN, SOUND_LOSE_LIFE);
+        delay(200);
+        digitalWrite(BUZZER_PIN, HIGH);
+        delay(60);
+        draw_platform(ST77XX_BLACK);
+        analogWrite(BUZZER_PIN, SOUND_LOSE_LIFE);
+        delay(200);
+        digitalWrite(BUZZER_PIN, HIGH);
+        delay(60);
+        draw_platform(ST77XX_GREEN);
+    }
 }
 
 void update_platform(byte direction, byte old_platform) {
@@ -48,13 +78,34 @@ void draw_ball(byte old_x, byte old_y, byte x, byte y) {
     tft.fillRect(x * PIXEL, y * PIXEL, PIXEL, PIXEL, ST77XX_WHITE);
 }
 
+void update_score(uint16_t score) {
+    tft.fillRect(SCORE_POS + PIXEL * 9, 0, PIXEL * 15, PIXEL * BAR_PIXEL_H,
+    ST7735_BLACK);
+    char text[5];
+    memset(text, 0, 5);
+    sprintf(text, "%u", score);
+    print_text(SCORE_POS + PIXEL * 9, 1 , text, 1,  ST77XX_WHITE);
+}
+
 void paint_over_obstacle(uint8_t x, uint8_t y) {
     tft.fillRect(
-                    x * 2 * PIXEL, /* x */
-                    y * PIXEL + PIXEL * OBSTACL_START, /* y */
-                    PIXEL * 2, /* width */
-                    PIXEL, /* hight */
-                    BACKGROUND_COLOR);
+                 x * 2 * PIXEL, /* x */
+                 y * PIXEL + PIXEL * OBSTACL_START, /* y */
+                 PIXEL * 2, /* width */
+                 PIXEL, /* hight */
+                 BACKGROUND_COLOR);
+}
+
+void update_lives(uint8_t num_lives) {
+    uint8_t i;
+    char text[LIVES * 2];
+    memset(text, 0, LIVES * 2);
+    for (i = 0; i < num_lives * 2; i+=2) {
+        text[i] = 'o';
+        text[i + 1] = ' ';
+    }
+    tft.fillRect( 0, 0, PIXEL * LIVES_W, PIXEL * BAR_PIXEL_H, ST7735_BLACK);
+    print_text(0, 1 , text, 1,  ST77XX_RED);
 }
 
 uint16_t get_uint16_color(uint8_t color) {

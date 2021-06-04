@@ -94,9 +94,9 @@ void generate_level1() {
 
 void prepare_current_level() {
     int i;
-    generate_level1();
+    // generate_level1();
     
-    // for(i = 0; i < OBSTACL_H; i++) {
-    //     memcpy(current_obstacles[i], obstacles2[i], OBSTACL_W);
-    // }
+    for(i = 0; i < OBSTACL_H; i++) {
+        memcpy(current_obstacles[i], obstacles1[i], OBSTACL_W);
+    }
 }

@@ -1,6 +1,10 @@
 #define LEFT_BUTTON (byte) 7
-#define MIDDLE_BUTTON (byte) 2
-#define RIGHT_BUTTON (byte) 4
+#define MIDDLE_BUTTON (byte) 4
+#define RIGHT_BUTTON (byte) 2
+
+#define RED_LIGHT_PIN A3
+#define GREEN_LIGHT_PIN A4
+#define BLUE_LIGHT_PIN A5
 
 #ifndef HEADERFILE_CONSTANTS
 #include "constants.h"
@@ -14,14 +18,6 @@
 #include "levels.h"
 #endif
 
-uint8_t first_platform = 15;
-uint8_t last_platform = 17;
-
-uint8_t ball_x = first_platform + BALL_PLATFORM_INIT_POS;
-uint8_t ball_y = PIXEL_DISPLAY_LEN - 2;
-uint8_t ball_h_direct = RIGHT;
-uint8_t ball_v_direct = UP;
-
 void move_platform(byte direction);
 void activate_buttons();
 bool collide_with_obstacle(uint8_t x, uint8_t y);
@@ -30,11 +26,33 @@ void move_ball_up_left(void);
 void move_ball_down_left(void);
 void move_ball_down_right(void);
 void move_ball();
+void play_sound(uint8_t sound);
+void RGB_light(uint8_t red_light_value, uint8_t green_light_value,
+    uint8_t blue_light_value);
+void change_light(uint8_t x, uint8_t y);
+
+uint8_t first_platform = INIT_FIRST_PLATFORM;
+uint8_t last_platform = INIT_LAST_PLATFORM;
+
+uint8_t ball_x = INIT_BALL_X;
+uint8_t ball_y = INIT_BALL_Y;
+uint8_t ball_h_direct = RIGHT;
+uint8_t ball_v_direct = UP;
+uint8_t num_lives = 3;
+uint16_t score;
+
+bool init_platform = true;
 
 void activate_buttons() {
     pinMode(LEFT_BUTTON, INPUT_PULLUP);
-    // pinMode(MIDDLE_BUTTON, INPUT_PULLUP);
+    pinMode(MIDDLE_BUTTON, INPUT_PULLUP);
     pinMode(RIGHT_BUTTON, INPUT_PULLUP);
+
+    pinMode(RED_LIGHT_PIN, OUTPUT);
+    pinMode(GREEN_LIGHT_PIN, OUTPUT);
+    pinMode(BLUE_LIGHT_PIN, OUTPUT);
+
+    pinMode(BUZZER_PIN, OUTPUT);
 }
 
 void move_platform(byte direction) {
@@ -52,37 +70,60 @@ void move_platform(byte direction) {
     }
 }
 
-bool collide_with_obstacle(uint8_t x, uint8_t y) {
-    uint8_t obstacle_x = x / 2;
-    uint8_t obstacle_y = y  - OBSTACL_START;
-    if(current_obstacles[obstacle_y][obstacle_x] != NO_OBSTACLE) {
-        current_obstacles[obstacle_y][obstacle_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_x, obstacle_y);
-        return true;
+void move_platform_with_ball(byte direction) {
+    byte old_platform;
+    if (direction == LEFT && first_platform != 0) {
+        old_platform = last_platform;
+        first_platform--;
+        last_platform--;
+        update_platform(direction, old_platform);
+        draw_ball(ball_x, ball_y, ball_x - 1, ball_y);
+        ball_x--;
+    } else if (direction == RIGHT && last_platform != 31) {
+        old_platform = first_platform;
+        first_platform++;
+        last_platform++;
+        update_platform(direction, old_platform);
+        draw_ball(ball_x, ball_y, ball_x + 1, ball_y);
+        ball_x++;
     }
-    return false;
 }
 
-bool collide_with_obstacle_h(uint8_t x, uint8_t y) {
-    uint8_t obstacle_x = x / 2;
-    uint8_t obstacle_y = y  - OBSTACL_START;
-    if(current_obstacles[obstacle_y][obstacle_x] != NO_OBSTACLE) {
-            current_obstacles[obstacle_y][obstacle_x] = NO_OBSTACLE;
-            paint_over_obstacle(obstacle_x, obstacle_y);
-            return true;
-        }
-    return false;
+void reset_ball_platform() {
+    first_platform = INIT_FIRST_PLATFORM;
+    last_platform = INIT_LAST_PLATFORM;
+
+    ball_x = INIT_BALL_X;
+    ball_y = INIT_BALL_Y;
+    ball_h_direct = RIGHT;
+    ball_v_direct = UP;
+    reset_animation();
 }
 
+void lose_life() {
+    if (num_lives > 0)
+        num_lives--;
+    init_platform = true;
+    update_lives(num_lives);
+    reset_ball_platform();
+}
+
+void collide_obstacle(uint8_t x, uint8_t y) {
+    play_sound(SOUND_OBSTACLE);
+    paint_over_obstacle(x, y);
+    change_light(x, y);
+    score += SCORE_STEP;
+    update_score(score);
+}
 
 void move_ball_up_right(void) {
     uint8_t x = ball_x + 1;
     uint8_t y = ball_y - 1;
 
-    if(ball_x + 1 == RIGHT_PIXEL_BORDER) {
+    if (ball_x + 1 == RIGHT_PIXEL_BORDER) {
         move_ball_up_left();
         return;
-    } else if( ball_y == UP_PIXEL_BORDER) {
+    } else if ( ball_y == UP_PIXEL_BORDER) {
         move_ball_down_right();
         return;
     }
@@ -96,24 +137,23 @@ void move_ball_up_right(void) {
     uint8_t obstacle_h_x = x / 2;
     uint8_t obstacle_h_y = ball_y - OBSTACL_START;
 
-     if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+     if ((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
             (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
-        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        if ((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        collide_obstacle(obstacle_v_x, obstacle_v_y);
         current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
         move_ball_down_right();
         return;
-    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+    } else if (ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
             current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        collide_obstacle(obstacle_h_x, obstacle_h_y);
         current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
         move_ball_up_left();
         return;
-    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+    } else if (y >= OBSTACL_START && y <= OBSTACL_END &&
             current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
-        Serial.println("diag");
+        collide_obstacle(obstacle_diag_x, obstacle_diag_y);
         current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
         move_ball_down_left();
         return;
     }
@@ -128,10 +168,10 @@ void move_ball_up_left(void) {
     uint8_t x = ball_x - 1;
     uint8_t y = ball_y - 1;
 
-    if(ball_x  == LEFT_PIXEL_BORDER) {
+    if (ball_x  == LEFT_PIXEL_BORDER) {
         move_ball_up_right();
         return;
-    } else if(ball_y == UP_PIXEL_BORDER) {
+    } else if (ball_y == UP_PIXEL_BORDER) {
         move_ball_down_left();
         return;
     }
@@ -145,24 +185,23 @@ void move_ball_up_left(void) {
     uint8_t obstacle_h_x = x / 2;
     uint8_t obstacle_h_y = ball_y - OBSTACL_START;
 
-    if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+    if ((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
             (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
-        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        if ((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        collide_obstacle(obstacle_v_x, obstacle_v_y);
         current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
         move_ball_down_left();
         return;
-    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+    } else if (ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
             current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        collide_obstacle(obstacle_h_x, obstacle_h_y);
         current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
         move_ball_up_right();
         return;
-    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+    } else if (y >= OBSTACL_START && y <= OBSTACL_END &&
             current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
-        Serial.println("diag");
+        collide_obstacle(obstacle_diag_x, obstacle_diag_y);
         current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
         move_ball_down_right();
         return;
     }
@@ -177,10 +216,15 @@ void move_ball_down_left(void) {
     uint8_t x = ball_x - 1;
     uint8_t y = ball_y + 1;
 
-    if(ball_x  == LEFT_PIXEL_BORDER) {
+    if (ball_x  == LEFT_PIXEL_BORDER) {
         move_ball_down_right();
         return;
-    } else if(ball_y == DOWN_PIXEL_BORDER) {
+    } else if (ball_y == DOWN_PIXEL_BORDER) {
+        if (ball_x + 1< first_platform || ball_x - 1> last_platform) {
+            lose_life();
+            return;
+        }
+        play_sound(SOUND_PLATFORM);
         move_ball_up_left();
         return;
     }
@@ -194,24 +238,23 @@ void move_ball_down_left(void) {
     uint8_t obstacle_h_x = x / 2;
     uint8_t obstacle_h_y = ball_y - OBSTACL_START;
     
-    if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+    if ((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
             (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
-        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        if ((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        collide_obstacle(obstacle_v_x, obstacle_v_y);
         current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
         move_ball_up_left();
         return;
-    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+    } else if (ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
             current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        collide_obstacle(obstacle_h_x, obstacle_h_y);
         current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
         move_ball_down_right();
         return;
-    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+    } else if (y >= OBSTACL_START && y <= OBSTACL_END &&
             current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
-        Serial.println("diag");
+        collide_obstacle(obstacle_diag_x, obstacle_diag_y);
         current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
         move_ball_up_right();
         return;
     }
@@ -226,10 +269,15 @@ void move_ball_down_right(void) {
     uint8_t x = ball_x + 1;
     uint8_t y = ball_y + 1;
 
-    if(ball_x + 1 == RIGHT_PIXEL_BORDER) {
+    if (ball_x + 1 == RIGHT_PIXEL_BORDER) {
         move_ball_down_left();
         return;
-    } else if(ball_y == DOWN_PIXEL_BORDER) {
+    } else if (ball_y == DOWN_PIXEL_BORDER) {
+        if (ball_x + 1 < first_platform || ball_x - 1> last_platform) {
+            lose_life();
+            return;
+        }
+        play_sound(SOUND_PLATFORM);
         move_ball_up_right();
         return;
     }
@@ -243,24 +291,23 @@ void move_ball_down_right(void) {
     uint8_t obstacle_h_x = x / 2;
     uint8_t obstacle_h_y = ball_y - OBSTACL_START;
 
-    if((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
+    if ((y >= OBSTACL_START) && (y <= OBSTACL_END) &&
             (current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE)) {
-        if((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        if ((current_obstacles[obstacle_v_y][obstacle_v_x] != NO_OBSTACLE))
+        collide_obstacle(obstacle_v_x, obstacle_v_y);
         current_obstacles[obstacle_v_y][obstacle_v_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_v_x, obstacle_v_y);
         move_ball_up_right();
         return;
-    } else if(ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
+    } else if (ball_y >= OBSTACL_START && ball_y <= OBSTACL_END &&
             current_obstacles[obstacle_h_y][obstacle_h_x] != NO_OBSTACLE) {
+        collide_obstacle(obstacle_h_x, obstacle_h_y);
         current_obstacles[obstacle_h_y][obstacle_h_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_h_x, obstacle_h_y);
         move_ball_down_left();
         return;
-    } else if(y >= OBSTACL_START && y <= OBSTACL_END &&
+    } else if (y >= OBSTACL_START && y <= OBSTACL_END &&
             current_obstacles[obstacle_diag_y][obstacle_diag_x] != NO_OBSTACLE) {
-        Serial.println("diag");
+        collide_obstacle(obstacle_diag_x, obstacle_diag_y);
         current_obstacles[obstacle_diag_y][obstacle_diag_x] = NO_OBSTACLE;
-        paint_over_obstacle(obstacle_diag_x, obstacle_diag_y);
         move_ball_up_left();
         return;
     }
@@ -273,13 +320,50 @@ void move_ball_down_right(void) {
 
 void move_ball(void) {
     bool res;
-    if(ball_v_direct == UP && ball_h_direct == RIGHT) {
+    if (ball_v_direct == UP && ball_h_direct == RIGHT) {
         move_ball_up_right();
-    } else if(ball_v_direct == UP && ball_h_direct == LEFT) {
+    } else if (ball_v_direct == UP && ball_h_direct == LEFT) {
         move_ball_up_left();
-    } else if(ball_v_direct == DOWN && ball_h_direct == RIGHT) {
+    } else if (ball_v_direct == DOWN && ball_h_direct == RIGHT) {
         move_ball_down_right();
-    } else if(ball_v_direct == DOWN && ball_h_direct == LEFT) {
+    } else if (ball_v_direct == DOWN && ball_h_direct == LEFT) {
         move_ball_down_left();
+    }
+}
+
+void play_sound(uint8_t sound) {
+    analogWrite(BUZZER_PIN, sound);
+}
+
+void RGB_light(uint8_t red_light_value, uint8_t green_light_value,
+    uint8_t blue_light_value) {
+  analogWrite(RED_LIGHT_PIN, red_light_value);
+  analogWrite(GREEN_LIGHT_PIN, green_light_value);
+  analogWrite(BLUE_LIGHT_PIN, blue_light_value);
+}
+
+void change_light(uint8_t x, uint8_t y) {
+    switch (current_obstacles[y][x]) {
+    case BYTE_RED:
+        RGB_light(255, 0, 0);
+        break;
+    case BYTE_GREEN:
+        RGB_light(0, 255, 0);
+        break;
+    case BYTE_BLUE:
+        RGB_light(0, 0, 255);
+        break;
+    case BYTE_CYAN:
+        RGB_light(0, 255, 255);
+        break;
+    case BYTE_MAGENTA:
+        RGB_light(255, 0, 255);
+        break;
+    case BYTE_YELLOW:
+        RGB_light(255, 255, 0);
+        break;
+    case BYTE_ORANGE:
+        RGB_light(251, 143, 1);
+        break;
     }
 }

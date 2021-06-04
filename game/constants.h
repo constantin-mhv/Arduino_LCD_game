@@ -1,44 +1,62 @@
 
 #define HEADERFILE_CONSTANTS
 
-#define PIXEL (uint8_t) 4
+#define BUZZER_PIN 6
 
-#define BAR_LINE_POS (uint8_t) 11
-#define DISPLAY_LEN (uint8_t) 128
-#define PIXEL_DISPLAY_LEN (uint8_t) DISPLAY_LEN / PIXEL
+#define PIXEL 4
 
-#define PLATFORM_H (uint8_t) 1 * PIXEL
-#define PLATFORM_W (uint8_t) 4 * PIXEL
-#define PLATFORM_N_PARTS (uint8_t) 3
+#define BAR_LINE_POS 11
+#define LIVES_W 9
+#define BAR_PIXEL_H 2
+#define DISPLAY_LEN 128
+#define PIXEL_DISPLAY_LEN (DISPLAY_LEN / PIXEL)
 
-#define BALL_PLATFORM_INIT_POS (uint8_t) 1
-#define UP_PIXEL_BORDER (uint8_t) 3
-#define DOWN_PIXEL_BORDER (uint8_t) PIXEL_DISPLAY_LEN - 2
-#define LEFT_PIXEL_BORDER (uint8_t) 0
-#define RIGHT_PIXEL_BORDER (uint8_t) PIXEL_DISPLAY_LEN
+#define PLATFORM_H 1 * PIXEL
+#define PLATFORM_W 4 * PIXEL
+#define PLATFORM_N_PARTS 3
 
-#define OBSTACL_H (uint8_t) 16
-#define OBSTACL_W (uint8_t) 16
+#define BALL_PLATFORM_INIT_POS 1
+#define UP_PIXEL_BORDER 3
+#define DOWN_PIXEL_BORDER (PIXEL_DISPLAY_LEN - 2)
+#define LEFT_PIXEL_BORDER 0
+#define RIGHT_PIXEL_BORDER PIXEL_DISPLAY_LEN
+
+#define OBSTACL_H 16
+#define OBSTACL_W 16
 #define OBSTACL_START 4
 #define OBSTACL_END 19
 
-#define LEFT (uint8_t) 1
-#define RIGHT (uint8_t) 2
-#define UP (uint8_t) 1
-#define DOWN (uint8_t) 2 
+#define LEFT 1
+#define RIGHT 2
+#define UP 1
+#define DOWN 2 
 
+#define INIT_FIRST_PLATFORM 15
+#define INIT_LAST_PLATFORM 17
+
+#define INIT_BALL_X (INIT_FIRST_PLATFORM + BALL_PLATFORM_INIT_POS)
+#define INIT_BALL_Y (PIXEL_DISPLAY_LEN - 2)
+
+#define LIVES 3
+#define SCORE_STEP 10
+#define SCORE_POS 65
 
 /* --- 8bit colors --- */
-#define BYTE_BLACK (uint8_t) 9
-#define BYTE_WHITE (uint8_t) 1
-#define BYTE_RED (uint8_t) 2
-#define BYTE_GREEN (uint8_t) 3
-#define BYTE_BLUE (uint8_t) 4
-#define BYTE_CYAN (uint8_t) 5
-#define BYTE_MAGENTA (uint8_t) 6
-#define BYTE_YELLOW (uint8_t) 7
-#define BYTE_ORANGE (uint8_t) 8
-#define NO_COLOR (uint8_t) 0
+#define BYTE_BLACK 9
+#define BYTE_WHITE 1
+#define BYTE_RED 2
+#define BYTE_GREEN 3
+#define BYTE_BLUE 4
+#define BYTE_CYAN 5
+#define BYTE_MAGENTA 6
+#define BYTE_YELLOW 7
+#define BYTE_ORANGE 8
+#define NO_COLOR 0
 #define NO_OBSTACLE NO_COLOR
+
+/* --- sounds --- */
+#define SOUND_OBSTACLE 220
+#define SOUND_PLATFORM 150
+#define SOUND_LOSE_LIFE 90
 
 /* TODO: down pixel border */
