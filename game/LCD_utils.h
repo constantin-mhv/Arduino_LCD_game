@@ -16,19 +16,22 @@
 #include "constants.h"
 #endif
 
-void print_text(byte x_pos, byte y_pos, char *text, byte text_size, uint16_t color);
+void print_text(byte x_pos, byte y_pos, char *text, byte text_size,
+    uint16_t color);
+void draw_platform(uint16_t color);
+void reset_animation(void);
 void update_platform(byte direction, byte old_platform);
 void draw_ball(byte old_x, byte old_y, byte x, byte y);
+void update_score(uint16_t score);
 void paint_over_obstacle(uint8_t x, uint8_t y);
 void update_lives(uint8_t num_lives);
-void reset_animation();
-void update_score(uint16_t score);
+void draw_obstacles(uint8_t current_obstacles[][OBSTACL_W]);
 uint16_t get_uint16_color(uint8_t color);
-
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-void print_text(byte x_pos, byte y_pos, char *text, byte text_size, uint16_t color) {
+void print_text(byte x_pos, byte y_pos, char *text, byte text_size,
+        uint16_t color) {
     tft.setCursor(x_pos, y_pos);
     tft.setTextSize(text_size);
     tft.setTextColor(color);
@@ -43,7 +46,7 @@ void draw_platform(uint16_t color) {
         tft.fillRect(i * PIXEL, DISPLAY_LEN - PIXEL, PIXEL, PIXEL, color);
 }
 
-void reset_animation() {
+void reset_animation(void) {
     tft.fillRect(0, DISPLAY_LEN - 2 * PIXEL, DISPLAY_LEN, 2 * PIXEL, ST77XX_BLACK);
     tft.fillRect(INIT_BALL_X * PIXEL , INIT_BALL_Y * PIXEL, PIXEL, PIXEL, ST77XX_WHITE);
     for (uint8_t i = 0; i < 4; i++) {
@@ -98,14 +101,30 @@ void paint_over_obstacle(uint8_t x, uint8_t y) {
 
 void update_lives(uint8_t num_lives) {
     uint8_t i;
-    char text[LIVES * 2];
-    memset(text, 0, LIVES * 2);
+    char text[LIVES * 2 + 1];
+    memset(text, 0, LIVES * 2 + 1);
     for (i = 0; i < num_lives * 2; i+=2) {
         text[i] = 'o';
         text[i + 1] = ' ';
     }
     tft.fillRect( 0, 0, PIXEL * LIVES_W, PIXEL * BAR_PIXEL_H, ST7735_BLACK);
     print_text(0, 1 , text, 1,  ST77XX_RED);
+}
+
+void draw_obstacles(uint8_t current_obstacles[][OBSTACL_W]) {
+    uint8_t i, j;
+
+    for (i = 0; i < OBSTACL_H; i++) {
+        for (j = 0; j < OBSTACL_W; j++) {
+            if (current_obstacles[i][j] != NO_COLOR)
+                tft.fillRect(
+                    j * 2 * PIXEL, /* x */
+                    i * PIXEL + PIXEL * OBSTACL_START, /* y */
+                    PIXEL * 2, /* width */
+                    PIXEL, /* hight */
+                    get_uint16_color(current_obstacles[i][j]));
+        }
+    }
 }
 
 uint16_t get_uint16_color(uint8_t color) {

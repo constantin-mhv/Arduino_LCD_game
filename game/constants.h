@@ -40,6 +40,8 @@
 #define LIVES 3
 #define SCORE_STEP 10
 #define SCORE_POS 65
+#define SPEED 85
+#define WAIT_TIME 300
 
 /* --- 8bit colors --- */
 #define BYTE_BLACK 9
@@ -58,5 +60,3 @@
 #define SOUND_OBSTACLE 220
 #define SOUND_PLATFORM 150
 #define SOUND_LOSE_LIFE 90
-
-/* TODO: down pixel border */

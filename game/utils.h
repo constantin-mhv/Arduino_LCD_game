@@ -1,6 +1,6 @@
-#define LEFT_BUTTON (byte) 7
-#define MIDDLE_BUTTON (byte) 4
-#define RIGHT_BUTTON (byte) 2
+#define LEFT_BUTTON 7
+#define MIDDLE_BUTTON 4
+#define RIGHT_BUTTON 2
 
 #define RED_LIGHT_PIN A3
 #define GREEN_LIGHT_PIN A4
@@ -18,14 +18,17 @@
 #include "levels.h"
 #endif
 
-void move_platform(byte direction);
-void activate_buttons();
-bool collide_with_obstacle(uint8_t x, uint8_t y);
+void activate_all(void);
+void move_platform(uint8_t direction);
+void move_platform_with_ball(uint8_t direction);
+void reset_ball_platform(void);
+void lose_life(void);
+void collide_obstacle(uint8_t x, uint8_t y);
 void move_ball_up_right(void);
 void move_ball_up_left(void);
 void move_ball_down_left(void);
 void move_ball_down_right(void);
-void move_ball();
+void move_ball(void);
 void play_sound(uint8_t sound);
 void RGB_light(uint8_t red_light_value, uint8_t green_light_value,
     uint8_t blue_light_value);
@@ -38,12 +41,15 @@ uint8_t ball_x = INIT_BALL_X;
 uint8_t ball_y = INIT_BALL_Y;
 uint8_t ball_h_direct = RIGHT;
 uint8_t ball_v_direct = UP;
-uint8_t num_lives = 3;
+uint8_t current_level = 1;
+uint8_t num_lives = LIVES;
 uint16_t score;
 
 bool init_platform = true;
+bool light_shine = true;
+bool no_lives;
 
-void activate_buttons() {
+void activate_all(void) {
     pinMode(LEFT_BUTTON, INPUT_PULLUP);
     pinMode(MIDDLE_BUTTON, INPUT_PULLUP);
     pinMode(RIGHT_BUTTON, INPUT_PULLUP);
@@ -55,8 +61,8 @@ void activate_buttons() {
     pinMode(BUZZER_PIN, OUTPUT);
 }
 
-void move_platform(byte direction) {
-    byte old_platform;
+void move_platform(uint8_t direction) {
+    uint8_t old_platform;
     if (direction == LEFT && first_platform != 0) {
         old_platform = last_platform;
         first_platform--;
@@ -70,8 +76,8 @@ void move_platform(byte direction) {
     }
 }
 
-void move_platform_with_ball(byte direction) {
-    byte old_platform;
+void move_platform_with_ball(uint8_t direction) {
+    uint8_t old_platform;
     if (direction == LEFT && first_platform != 0) {
         old_platform = last_platform;
         first_platform--;
@@ -89,7 +95,7 @@ void move_platform_with_ball(byte direction) {
     }
 }
 
-void reset_ball_platform() {
+void reset_ball_platform(void) {
     first_platform = INIT_FIRST_PLATFORM;
     last_platform = INIT_LAST_PLATFORM;
 
@@ -100,18 +106,40 @@ void reset_ball_platform() {
     reset_animation();
 }
 
-void lose_life() {
-    if (num_lives > 0)
-        num_lives--;
+void lose_life(void) {
+    uint8_t old_score;
+
+    num_lives--;
     init_platform = true;
     update_lives(num_lives);
     reset_ball_platform();
+    if (num_lives == 0) {
+        old_score = score;
+        score = 0;
+        update_score(score);
+        delay(WAIT_TIME);
+        score = old_score;
+        update_score(score);
+        delay(WAIT_TIME);
+        score = 0;
+        update_score(score);
+        score = old_score;
+        update_score(score);
+        delay(WAIT_TIME);
+        score = 0;
+        update_score(score);
+
+        num_lives = LIVES;
+        update_lives(num_lives);
+    }
 }
 
 void collide_obstacle(uint8_t x, uint8_t y) {
     play_sound(SOUND_OBSTACLE);
     paint_over_obstacle(x, y);
-    change_light(x, y);
+    if (light_shine) {
+        change_light(x, y);
+    }
     score += SCORE_STEP;
     update_score(score);
 }
@@ -163,6 +191,7 @@ void move_ball_up_right(void) {
     ball_h_direct = RIGHT;
     return;
 }
+
 
 void move_ball_up_left(void) {
     uint8_t x = ball_x - 1;
